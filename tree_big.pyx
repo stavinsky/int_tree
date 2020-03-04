@@ -1,14 +1,42 @@
 #cython: language_level=3
+DEF H = 2**64 - 1
 
-cdef class Range(object):
-    cdef public unsigned long first
-    cdef public unsigned long last
+
+cdef class BigInt:
+    cdef public unsigned long high
+    cdef public unsigned long low
+
+    def __init__(self, value):
+        self.high = value>>64 & H
+        self.low = value & H
+    def __eq__(self, other):
+        return (self.high == other.high) and (self.low == other.low)
+
+    def __gt__(self, BigInt second):
+        return (self.high > second.high) or ((self.high == second.high) and (self.low > second.low))
+
+    def __lt__(self, BigInt second):
+        return (self.high < second.high) or ((self.high == second.high) and (self.low < second.low))
+
+    def __ge__(self, BigInt second):
+        return (self.high >= second.high) and (self.low >= second.low)
+
+    def __le__(self, BigInt second):
+        return (self.high <= second.high) and (self.low <= second.low)
+    def __repr__(self):
+        r = (int(self.high) << 64) + self.low
+        return f"{r}"
+
+
+cdef class RangeBig(object):
+    cdef public BigInt first
+    cdef public BigInt last
 
     def __init__(self, first, last):
-        self.first = first
-        self.last = last
+        self.first = BigInt(first)
+        self.last = BigInt(last)
 
-    def __contains__(self, unsigned long ip):
+    def __contains__(self, BigInt ip):
         return self.first <= ip and self.last >= ip
 
     def __eq__(self, other):
@@ -18,13 +46,18 @@ cdef class Range(object):
         return f"Range({self.first}, {self.last})"
 
     def __hash__(self):
-        return hash((self.first, self.last))
+        return hash((
+            self.first.low,
+            self.first.high,
+            self.last.low,
+            self.last.high
+            ))
 
 
 cdef class Node(object):
     cdef public Node left
     cdef public Node right
-    cdef public unsigned long key
+    cdef public BigInt key
     cdef public set ranges
     cdef public short height
     def __init__(self, _range):
@@ -61,7 +94,7 @@ cdef class Tree(object):
         if node.key in _range:
             node.ranges.add(_range)
             return node
-        cdef unsigned long _key = _range.first
+        cdef BigInt _key = _range.first
         if _range.last < node.key:
             node.left = self._insert(node.left, _range)
 
@@ -89,20 +122,21 @@ cdef class Tree(object):
         return node
 
     cpdef set get_ranges(self, ip):
+        ip = BigInt(ip)
         return self._get_ranges(self.root, ip)
 
     cpdef set _get_ranges(self, node, ip):
-        if int(ip) == node.key:
+        if ip == node.key:
             return node.ranges
         ranges = set()
         for _range in node.ranges:
-            if <int>ip in _range :
+            if ip in _range :
                 ranges.add(_range)
-        if int(ip) < node.key:
+        if ip < node.key:
             if node.left:
                 ranges.update(self._get_ranges(node.left, ip))
             return ranges
-        if int(ip) > node.key:
+        if ip > node.key:
             if node.right:
                 ranges.update(self._get_ranges(node.right, ip))
             return ranges

@@ -19,10 +19,11 @@ cdef class BigInt:
         return (self.high < second.high) or ((self.high == second.high) and (self.low < second.low))
 
     def __ge__(self, BigInt second):
-        return (self.high >= second.high) and (self.low >= second.low)
+        return self == second or self > second
 
     def __le__(self, BigInt second):
-        return (self.high <= second.high) and (self.low <= second.low)
+        return self == second or self < second
+
     def __repr__(self):
         r = (int(self.high) << 64) + self.low
         return f"{r}"

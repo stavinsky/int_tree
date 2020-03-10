@@ -1,73 +1,118 @@
 #cython: language_level=3
 DEF H = 2**64 - 1
-
+from cpython.object cimport Py_LT, Py_LE, Py_EQ, Py_GE, Py_GT, Py_NE
+ctypedef unsigned long long u64
 
 cdef class BigInt:
-    cdef public unsigned long high
-    cdef public unsigned long low
+    cdef u64 _high
+    cdef u64 _low
 
     def __init__(self, value):
-        self.high = value>>64 & H
-        self.low = value & H
-    def __eq__(self, other):
-        return (self.high == other.high) and (self.low == other.low)
+#        if isinstance(value, int):
+        self._high = value>>64 & H
+        self._low = value & H
 
-    def __gt__(self, BigInt second):
-        return (self.high > second.high) or ((self.high == second.high) and (self.low > second.low))
+    cpdef u64 high(self):
+        return self._high
 
-    def __lt__(self, BigInt second):
-        return (self.high < second.high) or ((self.high == second.high) and (self.low < second.low))
+    cpdef u64 low(self):
+        return self._low
 
-    def __ge__(self, BigInt second):
-        return self == second or self > second
+    def __richcmp__(BigInt x, BigInt y, int op):
+        cdef:
+            u64 x_high = x.high()
+            u64 x_low = x.low()
+            u64 y_high = y.high()
+            u64 y_low = y.low()
+        if op == Py_LT:
+            return (x_high < y_high) |  ((x_high == y_high) & (x_low < y_low))
+        elif op == Py_LE:
+            return ((x_high == y_high) & (x_low == y_low)) | ((x_high < y_high) | ((x_high == y_high) & (x_low < y_low)))
+        elif op == Py_EQ:
+            return (x_high == y_high) & (x_low == y_low)
+        elif op == Py_NE:
+            return (x_high != y_high) & (x_low != y_low)
+        elif op == Py_GT:
+            return (x_high > y_high) | ((x_high == y_high) & (x_low > y_low))
+        elif op == Py_GE:
+            return ((x_high == y_high) & (x_low == y_low)) | ((x_high > y_high) | ((x_high == y_high) & (x_low > y_low)))
+        return False
 
-    def __le__(self, BigInt second):
-        return self == second or self < second
-
-    def __repr__(self):
-        r = (int(self.high) << 64) + self.low
-        return f"{r}"
-
+    def __hash__(self):
+        return hash((self._high, self._low))
 
 cdef class RangeBig(object):
-    cdef public BigInt first
-    cdef public BigInt last
+    cdef BigInt _first
+    cdef BigInt _last
 
     def __init__(self, first, last):
-        self.first = BigInt(first)
-        self.last = BigInt(last)
+        self._first = BigInt(first)
+        self._last = BigInt(last)
 
     def __contains__(self, BigInt ip):
-        return self.first <= ip and self.last >= ip
+        return (self._first <= ip) & (self._last >= ip)
 
     def __eq__(self, other):
         return self.first == other.first and self.last == other.last
 
     def __repr__(self,):
-        return f"Range({self.first}, {self.last})"
+        return f"Range({self._first}, {self._last})"
 
     def __hash__(self):
         return hash((
-            self.first.low,
-            self.first.high,
-            self.last.low,
-            self.last.high
+            self._first.low,
+            self._first.high,
+            self._last.low,
+            self._last.high
             ))
+    @property
+    def first(self):
+        return self._first
+    @property
+    def last(self):
+        return self._last
 
 
 cdef class Node(object):
-    cdef public Node left
-    cdef public Node right
-    cdef public BigInt key
+    cdef Node _left
+    cdef Node _right
+    cdef BigInt _key
     cdef public set ranges
-    cdef public short height
+    cdef short _height
     def __init__(self, _range):
         self.left = None
         self.right = None
         self.ranges = set((_range,))
-        self.key = _range.first
-        self.height = 1
+        self._key = _range.first
+        self._height = 1
 
+    @property
+    def left(self):
+        return self._left
+
+    @left.setter
+    def left(self, value):
+        self._left = value
+
+    @property
+    def right(self):
+        return self._right
+
+    @right.setter
+    def right(self, value):
+        self._right = value
+
+    @property
+    def height(self):
+        return self._height
+
+    @height.setter
+    def height(self, value):
+        self._height = value
+
+    @property
+    def key(self):
+        return self._key
 
 cdef class Tree(object):
     cdef Node root
@@ -89,7 +134,7 @@ cdef class Tree(object):
             self.root = Node(_range)
         self.root = self._insert(self.root, _range)
 
-    cpdef Node _insert(self, node, _range):
+    cdef Node _insert(self, node, _range):
         if not node:
             return Node(_range)
         if node.key in _range:
@@ -126,7 +171,7 @@ cdef class Tree(object):
         ip = BigInt(ip)
         return self._get_ranges(self.root, ip)
 
-    cpdef set _get_ranges(self, node, ip):
+    cdef set _get_ranges(self, node, ip):
         if ip == node.key:
             return node.ranges
         ranges = set()

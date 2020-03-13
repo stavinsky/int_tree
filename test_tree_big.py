@@ -1,4 +1,4 @@
-from tree_big import RangeBig, Tree, Node
+from tree_big import RangeBig, Tree, Node, BigInt
 import pickle
 
 
@@ -40,7 +40,41 @@ def test_tree_pickle():
         tree.insert(r)
     s = pickle.dumps(tree)
     tree_1 = pickle.loads(s)
-    assert tree_1.get_ranges(50) == {RangeBig(50, 99)}
+    assert tree_1.get_ranges(50) == set((RangeBig(50, 99),))
+
+
+def test_big_int_comparsion():
+    r1 = (0 << 64) + 0
+    r2 = (0 << 64) + 0
+    assert BigInt(r1) == BigInt(r2)
+    assert BigInt(r1) >= BigInt(r2)
+    assert BigInt(r2) <= BigInt(r1)
+
+    r1 = (1 << 64) + 0
+    r2 = (1 << 64) + 0
+    assert BigInt(r1) == BigInt(r2)
+    assert BigInt(r1) >= BigInt(r2)
+    assert BigInt(r2) <= BigInt(r1)
+
+    r1 = (1 << 64) + 1
+    r2 = (1 << 64) + 1
+    assert BigInt(r1) == BigInt(r2)
+    assert BigInt(r1) >= BigInt(r2)
+    assert BigInt(r2) <= BigInt(r1)
+
+    r1 = (1 << 64) + 0
+    r2 = (0 << 64) + 1
+    assert BigInt(r1) > BigInt(r2)
+    assert BigInt(r1) >= BigInt(r2)
+    assert BigInt(r2) < BigInt(r1)
+    assert BigInt(r2) <= BigInt(r1)
+
+    r1 = (0 << 64) + 1
+    r2 = (0 << 64) + 0
+    assert BigInt(r1) > BigInt(r2)
+    assert BigInt(r1) >= BigInt(r2)
+    assert BigInt(r2) < BigInt(r1)
+    assert BigInt(r2) <= BigInt(r1)
 
 
 # def test_always_ascending_big():

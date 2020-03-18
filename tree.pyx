@@ -3,12 +3,15 @@
 # distutils: sources = ./ctree/ctree.cpp
 
 from libcpp.vector cimport vector
+# from libcpp.pair import pair
+from libcpp.utility cimport pair
 
 cdef extern from "ctree/ctree.h":
     ctypedef unsigned long long u128;
-    cdef struct Range:
-        u128 first
-        u128 last
+#     cdef struct Range:
+#         u128 first
+#         u128 last
+    ctypedef pair[u128, u128] Range
     ctypedef vector[Range] Ranges
     cdef struct Node:
         Node* left
@@ -21,10 +24,10 @@ cdef extern from "ctree/ctree.h":
         Tree() except +
         void insert(Range) nogil except +
         Ranges ranges_for_point(u128) except +
-        vector[Ranges] items() except +
+        Ranges items() except +
 
 
-cdef class PTree:
+cdef class CTree:
     cdef Tree tree
     def __cinit__(self):
         self.tree = Tree()
@@ -32,10 +35,9 @@ cdef class PTree:
         cdef Range _range = Range(r[0], r[1])
         self.tree.insert(_range)
     def bulk_insert(self, list rs):
-        cdef u128 f, l
         cdef Range r
-        for f,l in rs:
-            self.tree.insert(Range(f,l))
+        for r in rs:
+            self.tree.insert(r)
     def items(self):
         return self.tree.items()
     def ranges_for_point(self, point):
@@ -44,10 +46,9 @@ cdef class PTree:
 
 def test():
     cdef Range r = Range(1, 10)
-    print(r.first, r.last)
-    tree = PTree()
+    print(r)
+    tree = CTree()
     tree.insert((1, 10))
-    # print(tree.ranges_for_point(3))
     print(tree.items())
 
 

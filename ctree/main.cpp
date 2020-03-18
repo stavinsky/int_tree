@@ -43,11 +43,10 @@ int main()
     tree.insert({90, 94});
     tree.insert({80, 90});
     tree.insert({70, 80});
-    vector<Ranges> walk_ranges = tree.items();
-    for(auto const& ranges: walk_ranges){
-        for(auto const& range: ranges){
-            cout << range << ", ";
-        }
+    vector walk_ranges = tree.items();
+    for(auto const& range: walk_ranges){
+         cout << range << ", ";
+
         cout<<endl;
     }
 //    auto l = [](auto acc, auto node) { *acc = std::max((u128)*acc, (u128)node->ranges.size());};

@@ -2,6 +2,7 @@
 #define CTREE_H
 #include <vector>
 #include <tuple>
+#include <utility>
 #include <forward_list>
 
 
@@ -9,10 +10,11 @@ typedef  __uint128_t u128;
 using namespace std;
 
 
-struct Range {
-    u128 first;
-    u128 last;
-};
+typedef pair<u128, u128> Range;
+//struct Range {
+//    u128 first;
+//    u128 last;
+//};
 typedef vector<Range> Ranges;
 bool range_contains(const Range &range, const u128 value);
 
@@ -31,7 +33,7 @@ class Tree {
 private:
     Node* root;
     Node* insert(Node*, const Range&);
-    vector<Ranges> items(const Node*);
+    Ranges items(const Node*);
     signed char get_balance(const Node *node);
     signed char get_height(const Node *node);
     Node* rotate_left(Node*);
@@ -43,7 +45,7 @@ public:
     Tree();
     ~Tree();
     void insert(const Range&);
-    vector<Ranges> items();
+    Ranges items();
     Ranges ranges_for_point(u128);
     u128 reduce(void (*func)(u128* acc, Node* node));
 

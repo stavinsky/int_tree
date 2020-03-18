@@ -4,11 +4,11 @@
 using namespace std;
 
 u128  range_middle(Range const &range) {
-    return range.first + ((range.last - range.first) / 2);
+    return range.first + ((range.second - range.first) / 2);
 };
 
 bool range_contains(const Range &range, const u128 value) {
-    return (range.first <= value) && (value <= range.last);
+    return (range.first <= value) && (value <= range.second);
 };
 
 //Node * left;
@@ -38,7 +38,7 @@ Node *Tree::insert(Node* node, Range const &range){
         return node;
     }
 
-    if (range.last < node->key){
+    if (range.second < node->key){
         node->left = insert(node->left, range);
     }
     else {
@@ -113,14 +113,15 @@ Node *Tree::rotate_right(Node * node)
     return y;
 
 }
-vector<Ranges> Tree::items(const Node* node ){
-    vector<Ranges> ranges;
-    vector<Ranges> v;
+Ranges Tree::items(const Node* node ){
+    Ranges ranges;
+    Ranges v;
     if (node->left != NULL) {
         ranges = items(node->left);
         v.insert(v.end(), ranges.begin(), ranges.end());
     }
-    v.push_back(node->ranges);
+//    v.push_back(node->ranges);
+    v.insert(v.end(), node->ranges.begin(), node->ranges.end());
     if (node->right != NULL){
         ranges = items(node->right);
         v.insert(v.end(), ranges.begin(), ranges.end());
@@ -128,8 +129,8 @@ vector<Ranges> Tree::items(const Node* node ){
     return v;
 }
 
-vector<Ranges> Tree::items(){
-    vector<Ranges> v;
+Ranges Tree::items(){
+    Ranges v;
     if (root != NULL){
         v = items(root);
     }
@@ -209,7 +210,7 @@ std::string toString(u128 num) {
 
 std::ostream &operator<<(std::ostream &os, const Range &range)
 {
-    os << "{ " << toString(range.first) << ", " << toString(range.last) << "}";
+    os << "{ " << toString(range.first) << ", " << toString(range.second) << "}";
     return os;
 }
 
